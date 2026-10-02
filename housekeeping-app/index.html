@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Homi Operations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">H</div>
+          <div>
+            <p class="eyebrow">Hotel</p>
+            <h1>Homi</h1>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <button class="nav-item active" data-view="housekeeping">Housekeeping</button>
+          <button class="nav-item" data-view="daily-reports">Daily room reports</button>
+          <button class="nav-item hidden" data-view="inspections" id="inspection-nav">Room inspections</button>
+          <button class="nav-item" data-view="maintenance">Maintenance tracker</button>
+          <button class="nav-item" data-view="preventive">Preventive maintenance</button>
+        </nav>
+
+        <div class="sidebar-card">
+          <p>Property operations</p>
+          <strong>Homi Hotel</strong>
+          <span>Housekeeping &amp; facilities</span>
+        </div>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow muted" id="view-eyebrow">Operations</p>
+            <h2 id="view-title">Housekeeping dashboard</h2>
+          </div>
+          <div class="topbar-actions">
+            <label class="role-picker">Demo role
+              <select id="current-role" aria-label="Current demo role">
+                <option value="housekeeper">Housekeeper</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="manager">Manager</option>
+              </select>
+            </label>
+            <button class="primary-btn" id="add-action-btn">Add room</button>
+          </div>
+        </header>
+
+        <section class="app-view" data-view-panel="housekeeping">
+          <div class="stats-grid" id="stats-grid"></div>
+
+          <div class="content-grid">
+            <div class="panel rooms-panel">
+              <div class="panel-header">
+                <h3>Room status</h3>
+                <div class="filters" id="filters">
+                  <button class="filter-chip active" data-filter="all">All</button>
+                  <button class="filter-chip" data-filter="dirty">Dirty</button>
+                  <button class="filter-chip" data-filter="in-progress">In progress</button>
+                  <button class="filter-chip" data-filter="needs-inspection">Needs inspection</button>
+                  <button class="filter-chip" data-filter="re-clean">Re-clean</button>
+                  <button class="filter-chip" data-filter="clean">Clean</button>
+                </div>
+              </div>
+              <div class="room-grid" id="room-grid"></div>
+            </div>
+
+            <aside class="panel tasks-panel">
+              <div class="panel-header">
+                <h3>Today's tasks</h3>
+                <span class="badge" id="task-count">0</span>
+              </div>
+              <div id="task-list" class="task-list"></div>
+
+              <form id="room-form" class="room-form hidden">
+                <h4>Add new room</h4>
+                <div class="field-row">
+                  <label>Room<input id="room-number" type="text" placeholder="e.g. 514" required /></label>
+                </div>
+                <div class="field-row">
+                  <label>Floor<input id="room-floor" type="number" min="1" max="30" value="5" required /></label>
+                </div>
+                <div class="field-row">
+                  <label>Cleaner<input id="room-cleaner" type="text" placeholder="Jane" /></label>
+                </div>
+                <div class="field-row actions">
+                  <button type="button" class="secondary-btn" data-cancel-form>Cancel</button>
+                  <button type="submit" class="primary-btn">Save room</button>
+                </div>
+              </form>
+            </aside>
+          </div>
+
+          <form id="housekeeping-work-order-form" class="inline-form panel hidden">
+            <h3>Issue a maintenance work order</h3>
+            <p class="panel-description">The request will appear in the maintenance tracker as an open work order.</p>
+            <div class="form-grid">
+              <label>Room<input id="work-order-area" type="text" readonly required /></label>
+              <label>Issue<input id="work-order-title" type="text" placeholder="e.g. Bathroom faucet is leaking" required /></label>
+              <label>Priority
+                <select id="work-order-priority">
+                  <option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option>
+                </select>
+              </label>
+              <label>Housekeeper name<input id="work-order-reporter" type="text" placeholder="Name" required /></label>
+              <label class="form-wide">Issue details<textarea id="work-order-details" rows="3" placeholder="Describe the problem and any helpful access notes" required></textarea></label>
+            </div>
+            <div class="field-row actions">
+              <button type="button" class="secondary-btn" id="cancel-work-order">Cancel</button>
+              <button type="submit" class="primary-btn">Send work order</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="app-view hidden" data-view-panel="daily-reports">
+          <div class="stats-grid" id="daily-report-stats"></div>
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h3>Daily room-use and linen reports</h3>
+                <p class="panel-description">Record consumables used, linen collected, and any missing or damaged room items.</p>
+              </div>
+            </div>
+            <form id="daily-report-form" class="inline-form daily-report-form hidden">
+              <h4>Room and shift details</h4>
+              <div class="form-grid">
+                <label>Room<select id="daily-report-room" required></select></label>
+                <label>Report date<input id="daily-report-date" type="date" required /></label>
+                <label>Housekeeper<input id="daily-report-housekeeper" type="text" placeholder="Name" required /></label>
+              </div>
+
+              <h4>Consumables used</h4>
+              <p class="form-help">Enter the quantity used during service. Known in-room par levels are shown for reference.</p>
+              <div class="quantity-grid" id="consumable-fields"></div>
+
+              <h4>Linen collected</h4>
+              <div class="quantity-grid" id="linen-fields"></div>
+
+              <div class="exception-heading">
+                <div>
+                  <h4>Missing or damaged items</h4>
+                  <p class="form-help">Log reusable room items or supplies that are missing or damaged.</p>
+                </div>
+                <button type="button" class="secondary-btn" id="add-exception">Add item</button>
+              </div>
+              <div id="exception-list" class="exception-list"></div>
+
+              <label class="notes-field">Additional notes<textarea id="daily-report-notes" rows="3" placeholder="Optional room or linen notes"></textarea></label>
+              <div class="field-row actions">
+                <button type="button" class="secondary-btn" data-cancel-form>Cancel</button>
+                <button type="submit" class="primary-btn">Save daily report</button>
+              </div>
+            </form>
+          </div>
+          <div class="panel daily-history-panel">
+            <div class="panel-header">
+              <div>
+                <h3>Recent room reports</h3>
+                <p class="panel-description">Daily usage, linen collection, and exception history.</p>
+              </div>
+            </div>
+            <div id="daily-report-history" class="record-grid"></div>
+          </div>
+        </section>
+
+        <section class="app-view hidden" data-view-panel="inspections">
+          <div class="stats-grid" id="inspection-stats"></div>
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h3>Rooms awaiting quality inspection</h3>
+                <p class="panel-description">Complete every check after cleaning. Rooms below 95% return to housekeeping for re-cleaning.</p>
+              </div>
+            </div>
+            <div id="inspection-queue" class="record-grid"></div>
+          </div>
+          <form id="inspection-form" class="panel inline-form hidden">
+            <div class="panel-header">
+              <div>
+                <h3 id="inspection-room-title">Inspect room</h3>
+                <p class="panel-description">Each passed item earns 10 points. A failed item deducts 10 points.</p>
+              </div>
+              <strong class="inspection-score" id="inspection-score">Score: 0 / 100</strong>
+            </div>
+            <div id="inspection-checklist" class="inspection-checklist"></div>
+            <div class="field-row">
+              <label>Inspector name<input id="inspector-name" type="text" placeholder="Supervisor name" required /></label>
+            </div>
+            <div class="field-row actions">
+              <button type="button" class="secondary-btn" id="cancel-inspection">Cancel</button>
+              <button type="submit" class="primary-btn">Submit inspection</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="app-view hidden" data-view-panel="maintenance">
+          <div class="stats-grid" id="maintenance-stats"></div>
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h3>Maintenance requests</h3>
+                <p class="panel-description">Log issues, assign a technician, and track work through resolution.</p>
+              </div>
+              <div class="filters" id="maintenance-filters">
+                <button class="filter-chip active" data-filter="all">All</button>
+                <button class="filter-chip" data-filter="open">Open</button>
+                <button class="filter-chip" data-filter="in-progress">In progress</button>
+                <button class="filter-chip" data-filter="completed">Completed</button>
+              </div>
+            </div>
+            <div id="maintenance-list" class="record-grid"></div>
+            <form id="maintenance-form" class="inline-form hidden">
+              <h4>Log a maintenance request</h4>
+              <div class="form-grid">
+                <label>Issue<input id="maintenance-title" type="text" placeholder="e.g. Leaking bathroom faucet" required /></label>
+                <label>Room / area<input id="maintenance-area" type="text" placeholder="e.g. Room 214 or lobby" required /></label>
+                <label>Priority
+                  <select id="maintenance-priority">
+                    <option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option>
+                  </select>
+                </label>
+                <label>Assigned technician<input id="maintenance-assignee" type="text" placeholder="Unassigned" /></label>
+                <label class="form-wide">Details<textarea id="maintenance-details" rows="2" placeholder="Describe the issue and any access notes"></textarea></label>
+                <label class="form-wide">Items needed<textarea id="maintenance-items" rows="3" placeholder="Enter one item per line"></textarea></label>
+                <label>Estimated duration (minutes)<input id="maintenance-estimate" type="number" min="1" step="1" placeholder="e.g. 45" /></label>
+              </div>
+              <div class="field-row actions">
+                <button type="button" class="secondary-btn" data-cancel-form>Cancel</button>
+                <button type="submit" class="primary-btn">Create request</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="app-view hidden" data-view-panel="preventive">
+          <div class="stats-grid" id="preventive-stats"></div>
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h3>Preventive maintenance schedule</h3>
+                <p class="panel-description">Schedule recurring checks and record each completed service.</p>
+              </div>
+              <div class="filters" id="preventive-filters">
+                <button class="filter-chip active" data-filter="all">All tasks</button>
+                <button class="filter-chip" data-filter="due">Due / overdue</button>
+                <button class="filter-chip" data-filter="upcoming">Upcoming</button>
+              </div>
+            </div>
+            <div id="preventive-list" class="record-grid"></div>
+            <form id="preventive-form" class="inline-form hidden">
+              <h4>Add a preventive maintenance task</h4>
+              <div class="form-grid">
+                <label>Task<input id="preventive-title" type="text" placeholder="e.g. Inspect HVAC filters" required /></label>
+                <label>Room / equipment<input id="preventive-area" type="text" placeholder="e.g. Rooftop HVAC" required /></label>
+                <label>Frequency
+                  <select id="preventive-frequency">
+                    <option>Weekly</option><option selected>Monthly</option><option>Quarterly</option><option>Semiannual</option><option>Annual</option>
+                  </select>
+                </label>
+                <label>Next due<input id="preventive-due" type="date" required /></label>
+                <label class="form-wide">Assigned technician<input id="preventive-assignee" type="text" placeholder="Unassigned" /></label>
+              </div>
+              <div class="field-row actions">
+                <button type="button" class="secondary-btn" data-cancel-form>Cancel</button>
+                <button type="submit" class="primary-btn">Add schedule</button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
