@@ -10,7 +10,21 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <main class="sign-in-screen" id="sign-in-screen">
+      <form class="sign-in-panel" id="sign-in-form">
+        <div class="brand-mark">H</div>
+        <p class="eyebrow muted">Homi Hotel</p>
+        <h1>Team sign in</h1>
+        <p class="panel-description">Use your employee email and password to continue.</p>
+        <label>Email<input id="sign-in-email" type="email" autocomplete="username" required /></label>
+        <label>Password<input id="sign-in-password" type="password" autocomplete="current-password" required /></label>
+        <p class="sign-in-error hidden" id="sign-in-error" role="alert">Email or password is incorrect.</p>
+        <button class="primary-btn" type="submit">Sign in</button>
+        <p class="demo-credentials">Demo supervisor: supervisor@homi.test / Homi123!</p>
+      </form>
+    </main>
+
+    <div class="app-shell hidden" id="app-shell">
       <aside class="sidebar">
         <div class="brand">
           <div class="brand-mark">H</div>
@@ -26,6 +40,7 @@
           <button class="nav-item hidden" data-view="inspections" id="inspection-nav">Room inspections</button>
           <button class="nav-item" data-view="maintenance">Maintenance tracker</button>
           <button class="nav-item" data-view="preventive">Preventive maintenance</button>
+          <button class="nav-item hidden" data-view="employees" id="employees-nav">Employees</button>
         </nav>
 
         <div class="sidebar-card">
@@ -42,13 +57,8 @@
             <h2 id="view-title">Housekeeping dashboard</h2>
           </div>
           <div class="topbar-actions">
-            <label class="role-picker">Demo role
-              <select id="current-role" aria-label="Current demo role">
-                <option value="housekeeper">Housekeeper</option>
-                <option value="supervisor">Supervisor</option>
-                <option value="manager">Manager</option>
-              </select>
-            </label>
+            <span class="signed-in-user" id="signed-in-user"></span>
+            <button class="secondary-btn" id="sign-out-btn" type="button">Sign out</button>
             <button class="primary-btn" id="add-action-btn">Add room</button>
           </div>
         </header>
@@ -67,6 +77,7 @@
                   <button class="filter-chip" data-filter="needs-inspection">Needs inspection</button>
                   <button class="filter-chip" data-filter="re-clean">Re-clean</button>
                   <button class="filter-chip" data-filter="clean">Clean</button>
+                  <button class="filter-chip" data-filter="closed">Closed</button>
                 </div>
               </div>
               <div class="room-grid" id="room-grid"></div>
@@ -88,7 +99,7 @@
                   <label>Floor<input id="room-floor" type="number" min="1" max="30" value="5" required /></label>
                 </div>
                 <div class="field-row">
-                  <label>Cleaner<input id="room-cleaner" type="text" placeholder="Jane" /></label>
+                  <label>Assign to<select id="room-cleaner"></select></label>
                 </div>
                 <div class="field-row actions">
                   <button type="button" class="secondary-btn" data-cancel-form>Cancel</button>
@@ -270,6 +281,32 @@
               <div class="field-row actions">
                 <button type="button" class="secondary-btn" data-cancel-form>Cancel</button>
                 <button type="submit" class="primary-btn">Add schedule</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="app-view hidden" data-view-panel="employees">
+          <div class="stats-grid" id="employee-stats"></div>
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h3>Hotel employees</h3>
+                <p class="panel-description">Add staff accounts and review their access level.</p>
+              </div>
+            </div>
+            <div id="employee-list" class="record-grid"></div>
+            <form id="employee-form" class="inline-form hidden">
+              <h4>Add employee</h4>
+              <div class="form-grid">
+                <label>Full name<input id="employee-name" type="text" autocomplete="name" required /></label>
+                <label>Email<input id="employee-email" type="email" autocomplete="email" required /></label>
+                <label>Temporary password<input id="employee-password" type="password" minlength="6" autocomplete="new-password" required /></label>
+                <label>Access level<select id="employee-role"><option value="housekeeper">Housekeeper</option><option value="supervisor">Supervisor</option></select></label>
+              </div>
+              <div class="field-row actions">
+                <button type="button" class="secondary-btn" data-cancel-form>Cancel</button>
+                <button type="submit" class="primary-btn">Add employee</button>
               </div>
             </form>
           </div>

@@ -26,8 +26,67 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
+}
+
+.sign-in-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(ellipse at 14% 16%, rgba(102, 217, 196, 0.24), transparent 34%), linear-gradient(135deg, #eaf1ff, #f8fbff 58%, #e8f7f3);
+}
+
+.sign-in-panel {
+  width: min(100%, 420px);
+  display: grid;
+  gap: 14px;
+  padding: 34px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.sign-in-panel .brand-mark {
+  margin-bottom: 8px;
+}
+
+.sign-in-panel h1 {
+  margin: -8px 0 0;
+  font-size: 1.8rem;
+}
+
+.sign-in-panel label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.sign-in-panel input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: #f7f9ff;
+  color: var(--text);
+}
+
+.sign-in-error {
+  margin: 0;
+  color: #c33256;
+  font-size: 0.88rem;
+}
+
+.demo-credentials {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 .app-shell {
@@ -138,6 +197,11 @@ input {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.signed-in-user {
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 .role-picker {
@@ -291,6 +355,16 @@ input {
   border-left-color: var(--danger);
 }
 
+.room-card.closed {
+  border-left-color: #68758b;
+  background: linear-gradient(180deg, #fff, #f0f2f5);
+}
+
+.status-pill.closed {
+  background: #e9edf2;
+  color: #4d596d;
+}
+
 .room-card-header,
 .room-meta,
 .task-item {
@@ -372,6 +446,24 @@ input {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 16px;
+}
+
+.room-assignment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.room-assignment select {
+  max-width: 150px;
+  min-width: 110px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 8px;
+  background: white;
+  color: var(--text);
 }
 
 .action-btn {
@@ -903,6 +995,10 @@ input {
 }
 
 @media (max-width: 620px) {
+  .sign-in-panel {
+    padding: 26px 22px;
+  }
+
   .main-panel {
     padding: 18px;
   }
@@ -944,6 +1040,11 @@ input {
   .topbar-actions {
     width: 100%;
     flex-wrap: wrap;
+  }
+
+  .room-assignment {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .inspection-item {

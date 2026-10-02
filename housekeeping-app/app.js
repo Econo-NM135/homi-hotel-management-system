@@ -10,6 +10,17 @@ const roomDefaults = [
 const rooms = loadRecords('homi-housekeeping-rooms', roomDefaults);
 const inspectionRecords = loadRecords('homi-room-inspections', []);
 const dailyRoomReports = loadRecords('homi-daily-room-reports', []);
+const employeeDefaults = [
+  { id: 1, name: 'Ava', email: 'ava@homi.test', password: 'Clean123!', role: 'housekeeper' },
+  { id: 2, name: 'Noah', email: 'noah@homi.test', password: 'Clean123!', role: 'housekeeper' },
+  { id: 3, name: 'Mia', email: 'mia@homi.test', password: 'Clean123!', role: 'housekeeper' },
+  { id: 4, name: 'Liam', email: 'liam@homi.test', password: 'Clean123!', role: 'housekeeper' },
+  { id: 5, name: 'Emma', email: 'emma@homi.test', password: 'Clean123!', role: 'housekeeper' },
+  { id: 6, name: 'Olivia', email: 'olivia@homi.test', password: 'Clean123!', role: 'housekeeper' },
+  { id: 7, name: 'Sophia', email: 'sophia@homi.test', password: 'Clean123!', role: 'housekeeper' },
+  { id: 8, name: 'Hotel Supervisor', email: 'supervisor@homi.test', password: 'Homi123!', role: 'supervisor' }
+];
+const employees = loadRecords('homi-housekeeping-employees', employeeDefaults);
 const consumableItems = [
   { id: 'shampoo', label: 'Shampoo' },
   { id: 'conditioner', label: 'Conditioner' },
@@ -117,11 +128,12 @@ const viewNames = {
   'daily-reports': { eyebrow: 'Housekeeping', title: 'Daily room reports', action: 'Add daily report' },
   inspections: { eyebrow: 'Quality assurance', title: 'Room inspections', action: null },
   maintenance: { eyebrow: 'Facilities', title: 'Maintenance tracker', action: 'Log request' },
-  preventive: { eyebrow: 'Facilities', title: 'Preventive maintenance', action: 'Add schedule' }
+  preventive: { eyebrow: 'Facilities', title: 'Preventive maintenance', action: 'Add schedule' },
+  employees: { eyebrow: 'Team', title: 'Employees', action: 'Add employee' }
 };
 
 let activeView = 'housekeeping';
-let currentRole = localStorage.getItem('homi-current-role') || 'housekeeper';
+let currentUser = employees.find((employee) => employee.id === Number(sessionStorage.getItem('homi-current-user'))) || null;
 let roomFilter = 'all';
 let maintenanceFilter = 'all';
 let preventiveFilter = 'all';
@@ -132,8 +144,11 @@ const viewPanels = document.querySelectorAll('.app-view[data-view-panel]');
 const viewTitle = document.getElementById('view-title');
 const viewEyebrow = document.getElementById('view-eyebrow');
 const addActionButton = document.getElementById('add-action-btn');
-const roleSelect = document.getElementById('current-role');
 const inspectionNav = document.getElementById('inspection-nav');
+const employeesNav = document.getElementById('employees-nav');
+const signInScreen = document.getElementById('sign-in-screen');
+const signInForm = document.getElementById('sign-in-form');
+const appShell = document.getElementById('app-shell');
 const roomForm = document.getElementById('room-form');
 const maintenanceForm = document.getElementById('maintenance-form');
 const preventiveForm = document.getElementById('preventive-form');
@@ -145,6 +160,8 @@ const exceptionList = document.getElementById('exception-list');
 const roomGrid = document.getElementById('room-grid');
 const maintenanceList = document.getElementById('maintenance-list');
 const preventiveList = document.getElementById('preventive-list');
+const employeeForm = document.getElementById('employee-form');
+const employeeList = document.getElementById('employee-list');
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (character) => ({
@@ -162,14 +179,15 @@ function saveRecords() {
   localStorage.setItem('homi-daily-room-reports', JSON.stringify(dailyRoomReports));
   localStorage.setItem('homi-maintenance-requests', JSON.stringify(maintenanceRequests));
   localStorage.setItem('homi-preventive-tasks', JSON.stringify(preventiveTasks));
+  localStorage.setItem('homi-housekeeping-employees', JSON.stringify(employees));
 }
 
 function isSupervisorOrHigher() {
-  return currentRole === 'supervisor' || currentRole === 'manager';
+  return currentUser?.role === 'supervisor' || currentUser?.role === 'manager';
 }
 
 function setView(view) {
-  if (view === 'inspections' && !isSupervisorOrHigher()) view = 'housekeeping';
+  if ((view === 'inspections' || view === 'employees') && !isSupervisorOrHigher()) view = 'housekeeping';
   activeView = view;
   const content = viewNames[view];
   viewTitle.textContent = content.title;
@@ -178,10 +196,12 @@ function setView(view) {
   addActionButton.classList.toggle('hidden', !content.action);
 
   inspectionNav.classList.toggle('hidden', !isSupervisorOrHigher());
+  employeesNav.classList.toggle('hidden', !isSupervisorOrHigher());
   navItems.forEach((item) => item.classList.toggle('active', item.dataset.view === view));
   viewPanels.forEach((panel) => panel.classList.toggle('hidden', panel.dataset.viewPanel !== view));
-  [roomForm, maintenanceForm, preventiveForm, housekeepingWorkOrderForm, inspectionForm, dailyReportForm].forEach((form) => form.classList.add('hidden'));
+  [roomForm, maintenanceForm, preventiveForm, housekeepingWorkOrderForm, inspectionForm, dailyReportForm, employeeForm].forEach((form) => form.classList.add('hidden'));
   if (view === 'inspections') renderInspectionQueue();
+  if (view === 'employees') renderEmployees();
 }
 
 function renderHousekeeping() {
@@ -190,14 +210,16 @@ function renderHousekeeping() {
     inProgress: rooms.filter((room) => room.status === 'in-progress').length,
     clean: rooms.filter((room) => room.status === 'clean').length,
     inspections: rooms.filter((room) => room.status === 'needs-inspection').length,
-    reclean: rooms.filter((room) => room.status === 're-clean').length
+    reclean: rooms.filter((room) => room.status === 're-clean').length,
+    closed: rooms.filter((room) => room.status === 'closed').length
   };
   const cards = [
     { label: 'Dirty rooms', value: counts.dirty, detail: 'Needs attention' },
     { label: 'In progress', value: counts.inProgress, detail: 'Currently cleaning' },
     { label: 'Ready', value: counts.clean, detail: 'Available today' },
     { label: 'Needs inspection', value: counts.inspections, detail: 'Waiting for review' },
-    { label: 'Re-clean', value: counts.reclean, detail: 'Failed quality inspection' }
+    { label: 'Re-clean', value: counts.reclean, detail: 'Failed quality inspection' },
+    { label: 'Closed', value: counts.closed, detail: 'Unavailable for guests' }
   ];
 
   document.getElementById('stats-grid').innerHTML = cards.map((card) => `
@@ -225,8 +247,10 @@ function renderHousekeeping() {
         ${room.status === 're-clean' && latestInspection ? `<div class="reclean-notice"><strong>Inspection score: ${latestInspection.score}%</strong><span>Fix these items:</span><ul>${failedItems.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>` : ''}
         <div class="action-row">
           ${action ? `<button class="action-btn primary" data-housekeeping-status="${action.nextStatus}" data-id="${room.id}">${action.label}</button>` : ''}
-          <button class="action-btn" data-assign-room="${room.id}">Assign</button>
-          <button class="action-btn" data-create-work-order="${room.id}">Report issue</button>
+          ${isSupervisorOrHigher() ? `<label class="room-assignment">Assign to<select data-room-assignment="${room.id}">${employeeOptions(room.cleaner)}</select></label>` : ''}
+          ${isSupervisorOrHigher() && room.status !== 'closed' ? `<button class="action-btn" data-close-room="${room.id}">Close room</button>` : ''}
+          ${isSupervisorOrHigher() && room.status === 'closed' ? `<button class="action-btn primary" data-reopen-room="${room.id}">Reopen room</button>` : ''}
+          ${room.status !== 'closed' ? `<button class="action-btn" data-create-work-order="${room.id}">Report issue</button>` : ''}
         </div>
       </article>
     `;
@@ -246,6 +270,37 @@ function renderHousekeeping() {
     { title: 'Restock amenities', time: '10:15', room: '318' },
     { title: 'Final inspection', time: '12:00', room: '205' }
   ].length;
+}
+
+function employeeOptions(selectedName = '') {
+  const options = ['<option value="Unassigned">Unassigned</option>'];
+  employees.filter((employee) => employee.role === 'housekeeper').forEach((employee) => {
+    options.push(`<option value="${escapeHtml(employee.name)}" ${employee.name === selectedName ? 'selected' : ''}>${escapeHtml(employee.name)}</option>`);
+  });
+  if (selectedName && selectedName !== 'Unassigned' && !employees.some((employee) => employee.name === selectedName)) {
+    options.push(`<option value="${escapeHtml(selectedName)}" selected>${escapeHtml(selectedName)}</option>`);
+  }
+  return options.join('');
+}
+
+function renderEmployees() {
+  const supervisors = employees.filter((employee) => employee.role === 'supervisor').length;
+  const housekeepers = employees.filter((employee) => employee.role === 'housekeeper').length;
+  document.getElementById('employee-stats').innerHTML = [
+    { label: 'Total employees', value: employees.length, detail: 'Accounts on this device' },
+    { label: 'Housekeepers', value: housekeepers, detail: 'Available for room assignment' },
+    { label: 'Supervisors', value: supervisors, detail: 'Can inspect and manage rooms' }
+  ].map((card) => `
+    <article class="stat-card"><small>${card.label}</small><strong>${card.value}</strong><span>${card.detail}</span></article>
+  `).join('');
+
+  employeeList.innerHTML = employees.map((employee) => `
+    <article class="record-card">
+      <div class="record-heading"><span class="frequency-tag">${employee.role === 'supervisor' ? 'Supervisor' : 'Housekeeper'}</span></div>
+      <h4>${escapeHtml(employee.name)}</h4>
+      <p class="record-area">${escapeHtml(employee.email)}</p>
+    </article>
+  `).join('');
 }
 
 function renderDailyReportFormOptions() {
@@ -518,12 +573,14 @@ function renderPreventive() {
 }
 
 function renderAll() {
+  document.getElementById('room-cleaner').innerHTML = employeeOptions('Unassigned');
   renderHousekeeping();
   renderDailyReportFormOptions();
   renderDailyReportHistory();
   renderMaintenance();
   renderPreventive();
   renderInspectionQueue();
+  if (isSupervisorOrHigher()) renderEmployees();
 }
 
 function addMonths(date, months) {
@@ -585,12 +642,13 @@ roomGrid.addEventListener('click', (event) => {
     if (room.status === 'clean') room.priority = 'Low';
     saveRecords();
     renderHousekeeping();
-  } else if (button.dataset.assignRoom) {
-    const room = rooms.find((entry) => entry.id === Number(button.dataset.assignRoom));
+  } else if (button.dataset.closeRoom || button.dataset.reopenRoom) {
+    if (!isSupervisorOrHigher()) return;
+    const roomId = Number(button.dataset.closeRoom || button.dataset.reopenRoom);
+    const room = rooms.find((entry) => entry.id === roomId);
     if (!room) return;
-    const staff = ['Ava', 'Noah', 'Mia', 'Liam', 'Emma', 'Olivia', 'Sophia'];
-    const currentIndex = staff.indexOf(room.cleaner);
-    room.cleaner = staff[(currentIndex + 1) % staff.length];
+    room.status = button.dataset.closeRoom ? 'closed' : 'dirty';
+    if (room.status === 'dirty') room.priority = 'High';
     saveRecords();
     renderHousekeeping();
   } else if (button.dataset.createWorkOrder) {
@@ -605,6 +663,15 @@ roomGrid.addEventListener('click', (event) => {
     housekeepingWorkOrderForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     document.getElementById('work-order-title').focus();
   }
+});
+
+roomGrid.addEventListener('change', (event) => {
+  if (!(event.target instanceof HTMLSelectElement) || !event.target.matches('[data-room-assignment]') || !isSupervisorOrHigher()) return;
+  const room = rooms.find((entry) => entry.id === Number(event.target.dataset.roomAssignment));
+  if (!room) return;
+  room.cleaner = event.target.value;
+  saveRecords();
+  renderHousekeeping();
 });
 
 document.getElementById('inspection-queue').addEventListener('click', (event) => {
@@ -757,10 +824,11 @@ preventiveList.addEventListener('click', (event) => {
 });
 
 addActionButton.addEventListener('click', () => {
-  const forms = { housekeeping: roomForm, 'daily-reports': dailyReportForm, maintenance: maintenanceForm, preventive: preventiveForm };
+  const forms = { housekeeping: roomForm, 'daily-reports': dailyReportForm, maintenance: maintenanceForm, preventive: preventiveForm, employees: employeeForm };
   const form = forms[activeView];
+  if (!form) return;
   const opening = form.classList.contains('hidden');
-  [roomForm, dailyReportForm, maintenanceForm, preventiveForm, housekeepingWorkOrderForm, inspectionForm].forEach((entry) => entry.classList.add('hidden'));
+  [roomForm, dailyReportForm, maintenanceForm, preventiveForm, housekeepingWorkOrderForm, inspectionForm, employeeForm].forEach((entry) => entry.classList.add('hidden'));
   form.classList.toggle('hidden', !opening);
   if (opening && activeView === 'preventive') {
     document.getElementById('preventive-due').value = dateOffset(7);
@@ -773,15 +841,6 @@ addActionButton.addEventListener('click', () => {
     document.getElementById('daily-report-housekeeper').value = room?.cleaner || '';
     exceptionList.replaceChildren();
   }
-});
-
-roleSelect.value = ['housekeeper', 'supervisor', 'manager'].includes(currentRole) ? currentRole : 'housekeeper';
-currentRole = roleSelect.value;
-roleSelect.addEventListener('change', () => {
-  currentRole = roleSelect.value;
-  localStorage.setItem('homi-current-role', currentRole);
-  if (!isSupervisorOrHigher() && activeView === 'inspections') setView('housekeeping');
-  else setView(activeView);
 });
 
 document.querySelectorAll('[data-cancel-form]').forEach((button) => {
@@ -881,4 +940,58 @@ preventiveForm.addEventListener('submit', (event) => {
   renderPreventive();
 });
 
-renderAll();
+employeeForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  if (!isSupervisorOrHigher()) return;
+  const name = document.getElementById('employee-name').value.trim();
+  const emailInput = document.getElementById('employee-email');
+  const email = emailInput.value.trim().toLowerCase();
+  const password = document.getElementById('employee-password').value;
+  const role = document.getElementById('employee-role').value;
+  const nameInput = document.getElementById('employee-name');
+  emailInput.setCustomValidity(employees.some((employee) => employee.email.toLowerCase() === email) ? 'This email is already registered.' : '');
+  nameInput.setCustomValidity(employees.some((employee) => employee.name.toLowerCase() === name.toLowerCase()) ? 'An employee with this name already exists.' : '');
+  if (!employeeForm.reportValidity()) return;
+
+  employees.push({ id: Date.now(), name, email, password, role });
+  saveRecords();
+  employeeForm.reset();
+  employeeForm.classList.add('hidden');
+  renderAll();
+});
+
+signInForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const email = document.getElementById('sign-in-email').value.trim().toLowerCase();
+  const password = document.getElementById('sign-in-password').value;
+  currentUser = employees.find((employee) => employee.email.toLowerCase() === email && employee.password === password) || null;
+  if (!currentUser) {
+    document.getElementById('sign-in-error').classList.remove('hidden');
+    return;
+  }
+  sessionStorage.setItem('homi-current-user', String(currentUser.id));
+  document.getElementById('sign-in-error').classList.add('hidden');
+  document.getElementById('signed-in-user').textContent = `${currentUser.name} · ${currentUser.role}`;
+  signInScreen.classList.add('hidden');
+  appShell.classList.remove('hidden');
+  setView('housekeeping');
+  renderAll();
+});
+
+document.getElementById('sign-out-btn').addEventListener('click', () => {
+  currentUser = null;
+  sessionStorage.removeItem('homi-current-user');
+  appShell.classList.add('hidden');
+  signInScreen.classList.remove('hidden');
+  signInForm.reset();
+});
+
+if (currentUser) {
+  document.getElementById('signed-in-user').textContent = `${currentUser.name} · ${currentUser.role}`;
+  signInScreen.classList.add('hidden');
+  appShell.classList.remove('hidden');
+  setView('housekeeping');
+  renderAll();
+} else {
+  signInScreen.classList.remove('hidden');
+}
